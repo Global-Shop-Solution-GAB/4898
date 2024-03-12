@@ -1,0 +1,287 @@
+Program.Sub.ScreenSU.Start
+Gui.Form..Create
+Gui.Form..Caption("Select Invoice Format")
+Gui.Form..Size(10395,5010)
+Gui.Form..MinX(0)
+Gui.Form..MinY(0)
+Gui.Form..Position(0,0)
+Gui.Form..BackColor(-2147483633)
+Gui.Form..MousePointer(0)
+Gui.Form..Event(UnLoad,Form_UnLoad)
+Gui.Form.cmdOK.Create(Button)
+Gui.Form.cmdOK.Size(855,375)
+Gui.Form.cmdOK.Position(195,4095)
+Gui.Form.cmdOK.Caption("OK")
+Gui.Form.cmdOK.Event(Click,cmdOK_Click)
+Gui.Form.gsRpt.Create(GsGridControl)
+Gui.Form.gsRpt.Size(9795,3750)
+Gui.Form.gsRpt.Position(195,255)
+Gui.Form.gsRpt.Event(RowCellClick,gsRpt_RowCellClick)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'BN, Apr 23, 2018
+'Project description is at the bottom
+'Customer: Harding Group
+F.Intrinsic.Control.Try
+v.Local.sError.Declare
+
+'Customer use 2 report ID for invoicing: 000055 for Canadian customers and 100155 for US customers
+f.Intrinsic.Control.If(v.Caller.Hook,=,16090)
+	f.Intrinsic.Control.If(V.Passed.009001,=,"000055",or,V.Passed.009001,=,"100155")
+		f.Intrinsic.Control.CallSub("Load_Report_Sequence")
+		'Show grid letting user to select report format to print
+		gui.Form..Show		
+	f.Intrinsic.Control.EndIf
+f.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)	
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Load_Report_Sequence.Start
+F.Intrinsic.Control.Try
+v.Local.sError.Declare
+v.Local.sSQL.Declare
+v.Local.iRpt.Declare
+v.Local.iRpt.Set(V.Passed.009001)
+
+f.ODBC.Connection!conCommon.OpenCommonConnection
+f.Intrinsic.String.Build("select a.Report_ID,a.Report_Sequence as Sequence,Case when b.Priority is not null then b.Priority When c.Priority is not null then c.Priority End as Priority,Case when b.Description is not null Then b.Description When  b.Description is not null then c.Description End as Description ,Case when b.Report_File is not null then b.Report_File When c.Report_File is not null then c.Report_File End as File,a.Active as SelectFile from BIR_ACTIVE_SEQ a left join BIR_GLOBAL_SEQ b on a.Report_ID = b.Report_ID and a.Report_Sequence = b.Report_Sequence left join BIR_USER_SEQ c on a.Report_ID = c.Report_ID and a.Report_Sequence = c.Report_Sequence and a.Company = c.Company where a.Report_ID = '{0}' and a.Company = '{1}';",v.Local.iRpt,v.Caller.CompanyCode,v.Local.sSQL)
+f.Data.DataTable.CreateFromSQL("Rpt","conCommon",v.Local.sSQL,True)
+gui.Form.gsRpt.AddGridviewFromDatatable("RptGV","Rpt")
+gui.Form.gsRpt.SuspendLayout()
+gui.Form.gsRpt.SetColumnProperty("RptGV","SelectFile","AllowEdit",False)
+gui.Form.gsRpt.SetColumnProperty("RptGV","SelectFile","ReadOnly",True)
+gui.Form.gsRpt.SetColumnProperty("RptGV","SelectFile","MaxWidth","40")
+gui.Form.gsRpt.SetColumnProperty("RptGV","SelectFile","Caption","Select")
+gui.Form.gsRpt.SetColumnProperty("RptGV","Report_ID","Visible",False)
+gui.Form.gsRpt.SetColumnProperty("RptGV","Report_ID","Visible",False)
+gui.Form.gsRpt.SetColumnProperty("RptGV","Sequence","MaxWidth","55")
+gui.Form.gsRpt.SetColumnProperty("RptGV","Sequence","CellHAlignment","center")
+gui.Form.gsRpt.SetColumnProperty("RptGV","Description","MinWidth","140")
+gui.Form.gsRpt.SetColumnProperty("RptGV","Priority","MaxWidth","45")
+gui.Form.gsRpt.SetColumnProperty("RptGV","Priority","CellHAlignment","center")
+gui.Form.gsRpt.SetColumnProperty("RptGV","File","MinWidth","200")
+gui.Form.gsRpt.ResumeLayout()
+gui.Form.gsRpt.MainView("RptGV")
+f.ODBC.Connection!conCommon.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)	
+F.Intrinsic.Control.EndTry
+Program.Sub.Load_Report_Sequence.End
+
+Program.Sub.gsRpt_RowCellClick.Start
+'User select the report format to print
+F.Intrinsic.Control.Try
+v.Local.sError.Declare
+
+f.Data.Datatable.SetValue("Rpt",-1,"SelectFile",False)
+f.Data.DataTable.SetValue("Rpt",v.Args.RowIndex,"SelectFile",True)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)	
+F.Intrinsic.Control.EndTry
+Program.Sub.gsRpt_RowCellClick.End
+
+Program.Sub.cmdOK_Click.Start
+'User select OK
+F.Intrinsic.Control.Try
+v.Local.sError.Declare
+f.Intrinsic.UI.InvokeWaitDialog("Processing...")
+f.Intrinsic.Control.CallSub("Update_and_Unload")
+f.Intrinsic.UI.CloseWaitDialog
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)	
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdOK_Click.End
+
+Program.Sub.Form_UnLoad.Start
+F.Intrinsic.Control.Try
+v.Local.sError.Declare
+
+f.Intrinsic.Control.CallSub("Update_and_Unload")
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)	
+F.Intrinsic.Control.EndTry
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.Update_and_Unload.Start
+F.Intrinsic.Control.Try
+v.Local.sError.Declare
+v.Local.sSelectSeq.Declare
+v.Local.sSQL.Declare
+v.Local.iRpt.Declare
+v.Local.sSelectFile.Declare
+
+v.Local.iRpt.Set(V.Passed.009001)
+f.Data.DataView.Create("Rpt","SelectSeqDV",22,"SelectFile = 1","")
+f.Data.DataView.ToString("Rpt","SelectSeqDV","Sequence","","','",v.Local.sSelectSeq)
+f.ODBC.Connection!conCommon.OpenCommonConnection
+f.Intrinsic.String.Build("Update BIR_ACTIVE_SEQ set Active = 0 where Report_ID = '{0}' and Company = '{1}'",v.Local.iRpt,v.Caller.CompanyCode,v.Local.sSQL)
+f.ODBC.Connection!conCommon.Execute(v.Local.sSQL)
+f.Intrinsic.String.Build("Update BIR_ACTIVE_SEQ set Active = 1 where Report_ID = '{0}' and Company = '{1}' and Report_Sequence in ('{2}')",v.Local.iRpt,v.Caller.CompanyCode,v.Local.sSelectSeq,v.Local.sSQL)
+f.ODBC.Connection!conCommon.Execute(v.Local.sSQL)
+f.ODBC.Connection!conCommon.Close
+
+'If the report file is the custom file
+f.Data.DataView.ToString("Rpt","SelectSeqDV","File","","','",v.Local.sSelectFile)
+f.Intrinsic.Control.If(v.Local.sSelectFile,=,"OE_INVOICE_hdc_SHORT.rpt")
+	f.ODBC.Connection!conx.OpenCompanyConnection
+	f.Intrinsic.Control.CallSub("PreProcessor_For_Custom_Report","iRpt",v.Local.iRpt)
+	f.ODBC.Connection!conx.Close
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.Update_and_Unload.End
+
+Program.Sub.PreProcessor_For_Custom_Report.Start
+F.Intrinsic.Control.Try
+v.Local.sError.Declare
+v.Local.sRptID.Declare
+v.Local.sSQL.Declare
+
+f.Intrinsic.String.LPad(v.Args.iRpt,"0",6,v.Local.sRptID)
+f.Intrinsic.String.Build("Select TERMINAL_NO,RPTID,KEY_SEQ,SO_NUM,SO_LINE,PO_SORT,LINE_ITEM,PART,DESCRIPTION,PRICE_5,NET_AMT,QTY_ORDER,QTY_BO,QTY_SHIPPED from V_Prt_Laser_Invoice where RPTID = '{0}' and Terminal_No = '{1}' and Line_Type = 'L' order by Part",v.Local.sRptID,v.Caller.Terminal,v.Local.sSQL)
+f.Data.DataTable.CreateFromSQL("D","conx",v.Local.sSQL,True)
+
+f.Intrinsic.Control.CallSub("PreProcessor_In_Details","sRpt",v.Local.sRptID)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.PreProcessor_For_Custom_Report.End
+
+Program.Sub.PreProcessor_In_Details.Start
+f.Intrinsic.Control.Try
+v.Local.sError.Declare
+v.Local.sSQL.Declare
+v.Local.sRet.Declare
+v.Local.sFilter.Declare
+v.Local.sSO.Declare
+v.Local.sPartDesc.Declare
+v.Local.sSubTotalNetAmt.Declare
+V.Local.fQty_Order.Declare
+v.Local.fQty_BO.Declare
+v.Local.fQty_Shipped.Declare
+v.Local.fNet_Amt.Declare
+v.Local.fTax_AmtDTL.Declare
+v.Local.fTotalNet_Amt.Declare
+v.Local.fHold.Declare
+v.Local..BulkDeclareLong(i1,iSeq)
+
+'Calculate SubTotal Net Amount
+f.Intrinsic.String.Build(" select sum(Net_AMT) from v_Prt_Laser_Invoice  where terminal_no = '{0}' and rptid = '{1}' and Line_Type = 'L'",v.Caller.Terminal,v.Args.sRpt,v.Local.sSQL)
+f.ODBC.Connection!conx.ExecuteAndReturn(v.Local.sSQL,v.Local.sRet)
+v.Local.fHold.Set(v.Local.sRet)
+f.Intrinsic.String.Format(v.Local.fHold,"#0.00",v.Local.sSubTotalNetAmt)
+
+'Get 1 record of the PRT_Laser_Invoice with Line_type = 'L'
+f.Intrinsic.String.Build("Select top 1 * from PRT_Laser_Invoice where Terminal_No = '{0}' and RPTID = '{1}' and Line_Type = 'L'",v.Caller.Terminal,v.Args.sRpt,v.Local.sSQL)
+f.Data.DataTable.CreateFromSQL("LRec","conx",v.Local.sSQL,True)
+f.Intrinsic.String.Build("Delete from Prt_Laser_Invoice where Terminal_No = '{0}' and RPTID = '{1}' and Line_Type = 'L'",v.Caller.Terminal,v.Args.sRpt,v.Local.sSQL)
+f.ODBC.Connection!conx.Execute(v.Local.sSQL)
+f.Intrinsic.String.Build("Delete from GCG_4898_Invoice_DTL where Terminal_No = '{0}' and RPTID = '{1}'",v.Caller.Terminal,v.Args.sRpt,v.Local.sSQL)
+F.ODBC.Connection!conx.Execute(v.Local.sSQL.Declare)
+
+f.Intrinsic.Control.If(v.DataTable.D.RowCount,=,0)
+	f.Intrinsic.Control.ExitSub
+f.Intrinsic.Control.EndIf
+
+f.Data.DataView.Create("D","DV",22,"","")
+f.Data.DataTable.Compute("D","Sum(Net_Amt)","",v.Local.fTotalNet_Amt)
+f.Data.DataView.ToDataTableDistinct("D","DV","PartPrice","Part*!*Description*!*Price_5",True)
+f.Intrinsic.Control.For(v.Local.i1,0,v.DataTable.PartPrice.RowCount--,1)
+	f.Intrinsic.String.Build("Part = '{0}' and Price_5 = {1}",v.DataTable.PartPrice(v.Local.i1).Part!FieldValString,v.DataTable.PartPrice(v.Local.i1).Price_5!FieldValFloat,v.Local.sFilter)
+	f.Data.DataView.SetFilter("D","DV",v.Local.sFilter)
+	'Calculate total of Order,Shipped,BO,Net_Amt
+	f.Data.DataTable.Compute("D","Sum(Qty_Order)",v.Local.sFilter,v.Local.fQty_Order)
+	f.Data.DataTable.Compute("D","Sum(Qty_Shipped)",v.Local.sFilter,v.Local.fQty_Shipped)
+	f.Data.DataTable.Compute("D","Sum(Qty_BO)",v.Local.sFilter,v.Local.fQty_BO)
+	f.Data.DataTable.Compute("D","Sum(Net_Amt)",v.Local.sFilter,v.Local.fNet_Amt)
+	
+	'Concatenate the Sales Order number and PO num
+	F.Intrinsic.Control.If(v.DataTable.SO.Exists)
+		f.Data.DataTable.Close("SO")
+	F.Intrinsic.Control.EndIf
+	f.Data.DataView.ToDataTableDistinct("D","DV","SO","SO_NUM",True)
+	f.Intrinsic.Control.If(v.DataView.SO!SODV.Exists)
+		f.Data.DataView.Close("SO","SODV")
+	f.Intrinsic.Control.EndIf
+	f.Data.DataView.Create("SO","SODV",22,"","")
+	f.Data.DataView.ToString("SO","SODV","SO_NUM","",V.Ambient.NewLine,v.Local.sSO)
+	
+	'Insert the record to the custom table GCG_4898_Invoice_DTL
+	f.Intrinsic.String.Replace(v.DataTable.PartPrice(v.Local.i1).Description!FieldValString,"'","_",v.Local.sPartDesc)
+	f.Intrinsic.String.Build("Insert into GCG_4898_Invoice_DTL (TERMINAL_NO,RPTID,KEY_SEQ,PART,DESCRIPTION,PRICE_5,NET_AMT,QTY_ORDER,QTY_BO,QTY_SHIPPED,ORDER_NO,KEY_GROUP) values ('{0}','{1}','{2}','{3}','{4}',{5},{6},{7},{8},{9},'{10}','{11}')",v.Caller.Terminal,v.Args.sRpt,v.Local.iSeq,v.DataTable.PartPrice(v.Local.i1).Part!FieldValString,v.Local.sPartDesc,v.DataTable.PartPrice(v.Local.i1).Price_5!FieldValFloat,v.Local.fNet_Amt,v.Local.fQty_Order,v.Local.fQty_BO,v.Local.fQty_Shipped,v.local.sSO,v.Local.i1,v.Local.sSQL)
+	f.ODBC.Connection!conx.Execute(v.Local.sSQL)
+	
+	'Update the value of that record in the Prt_Laser_Invoice
+	f.Data.DataTable.SetValue("LRec",0,"TERMINAL_NO",v.Caller.Terminal,"RPTID",v.Args.sRpt,"KEY_SEQ",v.Local.iSeq,"PART",v.DataTable.PartPrice(v.Local.i1).Part!FieldValString,"DESCRIPTION",v.Local.sPartDesc,"PRICE_5",v.DataTable.PartPrice(v.Local.i1).Price_5!FieldValFloat,"NET_AMT",v.Local.fNet_Amt,"QTY_ORDER",v.Local.fQty_Order,"QTY_BO",v.Local.fQty_BO,"QTY_SHIPPED",v.Local.fQty_Shipped,"TOTAL_TAX",v.Local.sSubTotalNetAmt,"KEY_SORT",v.Local.i1)
+	f.Data.DataTable.SaveToDB("LRec","conx","Prt_Laser_Invoice","",128)
+	f.Intrinsic.Math.Add(v.Local.iSeq,1,v.Local.iSeq)
+			
+F.Intrinsic.Control.Next(v.Local.i1)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.PreProcessor_In_Details.End
+
+Program.Sub.Move_File_For_Testing.Start
+F.Intrinsic.Control.Try
+'This subroutine is just for testing purpose
+v.Local.sError.Declare
+v.Local.sCurrentFile.Declare
+v.Local.sFileToCopy.Declare
+v.Local.sSQL.Declare
+'Test with 002 or 050 terminal
+f.Intrinsic.String.Build("{0}\BIIVCBAO",v.Caller.FilesDir,v.Local.sCurrentFile)
+f.Intrinsic.File.DeleteFile(v.Local.sCurrentFile)
+f.Intrinsic.File.CopyFile("C:\Users\bnguyen\Desktop\Archieve\4898_Custom Invoice Report _ Laura Kumic\Dev\tEST\BIIVCBAO",v.Local.sCurrentFile)
+f.ODBC.Connection!conx.Opencompanyconnection
+	f.Data.DataTable.CreateFromSQL("X","conx","Select * from prt_Laser_Invoice where Terminal_no = '050' and rptID = '100155'",True)
+	f.ODBC.Connection!conx.execute("Delete from prt_Laser_invoice where (Terminal_no = '050' and rptID = '100155') or (Terminal_no = '050' and rptID = '000055') or (Terminal_no = '171' and rptID = '100155') or (Terminal_no = '171' and rptID = '000055')")
+	f.Data.DataTable.SetValue("X",-1,"Terminal_No",v.Caller.Terminal,"RPTID","000055")
+	f.Data.DataTable.SaveToDB("X","conx","prt_laser_invoice","",128)
+f.ODBC.Connection!conx.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)	
+F.Intrinsic.Control.EndTry
+Program.Sub.Move_File_For_Testing.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$BAO$}$3/21/2018 8:59:51 AM$}$False
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$
+'BN, May 17, 2018
+This program will create a custom invoice report for Canadian and US customer.
+The report will be dedicated for Invoicing multiple orders for 1 customer in 1 invoice
+The custom invoice will group by Part & Price
+The Canadian invoices need to break down tax
+US customers generally does not have tax break down
+Program.Sub.Comments.End
+
